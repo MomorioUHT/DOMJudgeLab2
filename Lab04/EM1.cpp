@@ -1,42 +1,40 @@
 #include <iostream>
 #include <vector>
+#include <queue>
 #include <climits>
 
 using namespace std;
 
+struct Cell {
+    int x, y, cost;
+    bool operator>(const Cell& other) const {
+        return cost > other.cost;
+    }
+};
+
 int findMinCost(vector<vector<int>>& grid, int rows, int cols) {
     // Direction vectors for moving up, down, left, and right
-    int dx[] = {0, 1, 0, -1};
-    int dy[] = {1, 0, -1, 0};
+    const int dx[4] = {0, 1, 0, -1};
+    const int dy[4] = {1, 0, -1, 0};
 
     // Min-cost matrix to store the minimum cost to reach each cell
     vector<vector<int>> minCost(rows, vector<int>(cols, INT_MAX));
     minCost[0][0] = grid[0][0];
 
-    // Visited array to keep track of processed cells
-    vector<vector<bool>> visited(rows, vector<bool>(cols, false));
+    // Min-heap priority queue for efficiently finding the next cell to process
+    priority_queue<Cell, vector<Cell>, greater<Cell>> pq;
+    pq.push({0, 0, grid[0][0]});
 
-    while (true) {
-        // Find the cell with the minimum cost that has not been visited
-        int minVal = INT_MAX;
-        int cx = -1, cy = -1;
-        for (int i = 0; i < rows; ++i) {
-            for (int j = 0; j < cols; ++j) {
-                if (!visited[i][j] && minCost[i][j] < minVal) {
-                    minVal = minCost[i][j];
-                    cx = i;
-                    cy = j;
-                }
-            }
+    while (!pq.empty()) {
+        Cell current = pq.top();
+        pq.pop();
+
+        int cx = current.x, cy = current.y;
+
+        // Skip if this cell has already been processed with a smaller cost
+        if (current.cost > minCost[cx][cy]) {
+            continue;
         }
-
-        // If no such cell is found, break (all cells are visited)
-        if (cx == -1 && cy == -1) {
-            break;
-        }
-
-        // Mark the cell as visited
-        visited[cx][cy] = true;
 
         // Update the cost of neighboring cells
         for (int d = 0; d < 4; ++d) {
@@ -44,8 +42,10 @@ int findMinCost(vector<vector<int>>& grid, int rows, int cols) {
             int ny = cy + dy[d];
 
             if (nx >= 0 && nx < rows && ny >= 0 && ny < cols) {
-                if (!visited[nx][ny] && minCost[cx][cy] + grid[nx][ny] < minCost[nx][ny]) {
-                    minCost[nx][ny] = minCost[cx][cy] + grid[nx][ny];
+                int newCost = minCost[cx][cy] + grid[nx][ny];
+                if (newCost < minCost[nx][ny]) {
+                    minCost[nx][ny] = newCost;
+                    pq.push({nx, ny, newCost});
                 }
             }
         }
@@ -55,6 +55,9 @@ int findMinCost(vector<vector<int>>& grid, int rows, int cols) {
 }
 
 int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
     int numRooms;
     cin >> numRooms;
 
@@ -69,7 +72,7 @@ int main() {
             }
         }
 
-        cout << findMinCost(grid, rows, cols) << endl;
+        cout << findMinCost(grid, rows, cols) << "\n";
     }
 
     return 0;
